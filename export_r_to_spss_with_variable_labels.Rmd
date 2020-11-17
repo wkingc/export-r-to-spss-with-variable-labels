@@ -1,0 +1,217 @@
+---
+bibliography: export_r_to_spss_with_variable_labels.bib
+biblio-style: apalike
+link-citations: yes
+output:  
+  bookdown::html_document2:
+    theme: default
+    highlight: textmate
+    code_folding: show
+    mathjax: local
+    self_contained: FALSE
+    number_sections: FALSE
+---
+
+# Introduction
+
+The <i>foreign</i> R package is useful for exporting data sets to all kinds of formats including files for the proprietary <a href = "https://www.ibm.com/analytics/spss-statistics-software" target="_blank">SPSS program from IBM</a>.  However, the default method for writing to SPSS doesn't allow for variable labels.  Instead, it defaults to labeling all of the variables by their name from the column headings.  In this presentation, we will use the <i>Hmisc</i> R package for its variable labeling functionality and write a modification to the original SPSS export function from the <i>foreign</i> R package.  If you want to test this code but don't have SPSS, there is an open-source version available called <a href = "https://www.gnu.org/software/pspp/" target="_blank">PSPP</a>.
+
+This presentation will use the R programming language and assume the user is using Rstudio to compile their R markdown files into HTML [@Rlang2019; @Rstudio].  If you want to follow along with the R markdown, it is downloadable <a href="https://waderstats.com/rstudio-files/export_r_to_spss_with_variable_labels/export_r_to_spss_with_variable_labels.Rmd" target="_blank">here</a>.  The associated bibliography file is <a href="https://waderstats.com/rstudio-files/export_r_to_spss_with_variable_labels/export_r_to_spss_with_variable_labels.bib" target="_blank">here</a>.
+
+# Libraries
+
+The libraries <i>knitr</i>, <i>bookdown</i>, and <i>kableExtra</i> generate the HTML output [@knitr; @bookdown; @kableExtra].  We use the <i>Hmisc</i> library to set variable labels and the <i>foreign</i> library to export the data to SPSS [@Hmisc; @foreign].
+
+```{r libraries, eval = TRUE, echo = TRUE, results = TRUE, warning = FALSE, message = FALSE}
+package_loader <- function(x, ...) {
+  if (x %in% rownames(installed.packages()) == FALSE) install.packages(x)
+  library(x, ...)
+}
+
+packages <- c("knitr", "bookdown", "kableExtra", "Hmisc", "foreign")
+
+invisible(sapply(X = packages, FUN = package_loader, character.only = TRUE))
+```
+
+# Data Setup
+
+There are two essential parts to setting up the data.  First, make sure each variable is coded to reflect its class.  Second, we want to add labels to each variable in the data set using the label function of the <i>Hmisc</i> library.
+
+```{r ExampleDataSetup, eval = TRUE, echo = TRUE, results = TRUE, warning = FALSE, message = FALSE}
+set.seed(123)
+data(mpg)
+mpg <- data.frame(mpg)
+
+colnames(mpg)[which(colnames(mpg) == "manufacturer")] <- "manu"
+
+mpg$manu <- factor(mpg$manu)
+mpg$model <- factor(mpg$model)
+mpg$displ <- as.numeric(mpg$displ)
+mpg$year <- factor(mpg$year, levels = c("1999", "2008"), ordered = TRUE)
+
+mpg$dp <- as.Date(NA, origin = "1970-01-01")
+mpg$dp[which(mpg$year == "1999")] <- sample(seq(as.Date('1999-01-01', format = "%Y-%m-%d", origin = "1970-01-01"), as.Date('1999-12-25', format = "%Y-%m-%d", origin = "1970-01-01"), by="day"), dim(mpg)[1]/2)
+mpg$dp[which(mpg$year == "2008")] <- sample(seq(as.Date('2008-01-01', format = "%Y-%m-%d", origin = "1970-01-01"), as.Date('2008-12-25', format = "%Y-%m-%d", origin = "1970-01-01"), by="day"), dim(mpg)[1]/2)
+
+mpg$cyl <- factor(mpg$cyl, levels = c(4, 5, 6, 8), ordered = TRUE)
+mpg$trans <- factor(mpg$trans)
+mpg$drv <- factor(mpg$drv, levels = c("f", "r", "4"), labels = c("front-wheel drive", "rear wheel drive", "4wd"))
+mpg$fl <- factor(mpg$fl)
+mpg$class <- factor(mpg$class)
+
+mpg$rn <- rnorm(dim(mpg)[1], mean = 10, sd = 5)
+mpg$rn[sample(1:length(mpg$rn), size = 50)] <- NA
+
+mpg$party <- factor(sample(c("republican", "democrat", "independent", NA), dim(mpg)[1], replace = TRUE), levels = c("republican", "democrat", "independent"))
+mpg$comments <- sample(c("I like this car!", "Meh.", "This is the worst car ever!", "Does it come in green?", "want cheese flavoured cars.", "Does it also fly?", "Blah, Blah, Blah, Blah, Blah, Blah, Blah, Blah", NA), dim(mpg)[1], replace = TRUE)
+
+label(mpg$manu) <- "manufacturer"
+label(mpg$model) <- "model name"
+label(mpg$displ) <- "engine displacement, in litres"
+label(mpg$year) <- "year of manufacture"
+label(mpg$dp) <- "date of purchase"
+label(mpg$cyl) <- "number of cylinders"
+label(mpg$trans) <- "type of transmission"
+label(mpg$drv) <- "drive type"
+label(mpg$cty) <- "city miles per gallon"
+label(mpg$hwy) <- "highway miles per gallon"
+label(mpg$fl) <- "fuel type"
+label(mpg$class) <- "type of car"
+label(mpg$rn) <- "some random numbers that are generated from a normal distrubtion with mean = 10 and sd = 5"
+label(mpg$party) <- "some random political parties"
+label(mpg$comments) <- "some random comments"
+
+kable(head(mpg), caption = "Header of <b>mpg</b>.", booktabs = TRUE, escape = FALSE) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+# Exporting the Data to SPSS
+
+The original unexported function can be viewed with the command <b>foreign:::writeForeignSPSS</b>.  We are going to create a new function called <b>writeForeignSPSS2</b>.  Below is the code with comments where changes are made.
+
+```{r exportToSPSS, eval = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+# The function below isn't exported from the foreign package, so we recreate it here.  Another option is the use the ::: operator but the documention for R discourages this use case.  We will take their word for it :).
+adQuote <- function(x) paste("\"", x, "\"", sep = "")
+
+# The original function doesn't deal with dates.  To address this we need to check if the variable is of class date to later store is a character string.
+is.date <- function(x) inherits(x, 'Date')
+
+# The original function uses the strwrap function that can sometime cause a split string to begin with a '*'.  This function prevents this problem.
+spssSafeSplit <- function(x) {
+  spssSplit <- strwrap(paste(x, collapse = " "), width = 70)
+  
+  spssInvalid <- which(sapply(X = spssSplit, FUN = substring, 1, 1) == "*")
+  
+  if (length(spssInvalid) == 0) return(spssSplit)
+  
+  for (i in 1:length(spssInvalid)) {
+    spssSplit[spssInvalid[i]] <- gsub("* ", "", spssSplit[spssInvalid[i]], fixed = TRUE)
+    spssSplit[spssInvalid[i] - 1] <- paste(spssSplit[spssInvalid[i] - 1], "*")
+  }
+  
+  return(spssSplit)
+}
+
+writeForeignSPSS2 <- function (df, datafile, codefile, varnames = NULL, maxchars = 32L) {
+  dfn <- lapply(df, function(x) if (is.factor(x)) as.numeric(x) else x)
+  
+  # write.table(dfn, file = datafile, row.names = FALSE, col.names = FALSE, sep = ",", quote = FALSE, na = "", eol = ",\n")
+  write.table(dfn, file = datafile, row.names = FALSE, col.names = FALSE, sep = "\t", quote = FALSE, na = ".", eol = "\n") # The original code creates a comma-delimited file.  In many data sets, there are comment columns that include commas which creates unexpected results.  To avoid that I change it over to create tab-delimited data.
+  
+  # varlabels <- names(df)
+  varlabels <- label(df) # We don't want the names of df but the labels.
+  
+  if (is.null(varnames)) {
+    varnames <- abbreviate(names(df), maxchars)
+    if (any(sapply(varnames, nchar) > maxchars)) stop("I cannot abbreviate the variable names to 'maxchars' or fewer chars")
+    # if (any(varnames != varlabels)) warning("some variable names were abbreviated")
+    if (any(varnames != names(varlabels))) warning("some variable names were abbreviated") # The original code has an error check for the max length of variable names.  We can still have the error check, but we need to use the names of varlables instead.  
+  }
+  
+  varnames <- gsub("[^[:alnum:]_\\$@#]", "\\.", varnames)
+  dl.varnames <- varnames
+  
+  chv <- sapply(df, is.character)
+  fav <- sapply(df, is.factor)
+  dav <- sapply(df, is.date) # This is added in to deal with date class columns.
+  
+  if (any(chv)) {
+    lengths <- sapply(df[chv], function(v) max(c(nchar(v), 8), na.rm = TRUE))
+    lengths <- paste0("(A", lengths, ")")
+    dl.varnames[chv] <- paste(dl.varnames[chv], lengths)
+  }
+  
+  # Store any date class columns as a character string in SPSS.  It is the same as above, but coerces the date to a character vector.
+  if (any(dav)) {
+    lengths <- sapply(df[dav], function(v) max(c(nchar(as.character(v)), 8), na.rm = TRUE))
+    lengths <- paste0("(A", lengths, ")")
+    dl.varnames[dav] <- paste(dl.varnames[dav], lengths)
+  }
+  
+  if (any(fav)) {
+    dl.varnames[fav] <- paste(dl.varnames[fav], "(F8.0)")
+  }
+  
+  # if (any(chv) || any(fav)) {
+  #     star <- ifelse(c(FALSE, diff(chv | fav) == 1)[chv | fav], " *", " ")
+  #     dl.varnames[chv | fav] <- paste(star, dl.varnames[chv | fav])
+  # }
+  
+  # In the code above, the star detection isn't setup for dates.  We can add this simple enough, as shown below.
+  if (any(chv) || dav || any(fav)) {
+    star <- ifelse(c(FALSE, diff(chv | dav | fav) == 1)[chv | dav | fav], " *", " ")
+    dl.varnames[chv | dav | fav] <- paste(star, dl.varnames[chv | dav | fav])
+  }
+
+  cat("SET DECIMAL=DOT.\n\n", file = codefile)
+  # cat("DATA LIST FILE=", adQuote(datafile), " free (\",\")\n", file = codefile, append = TRUE)
+  cat("DATA LIST FILE=", adQuote(datafile), " free (TAB)\n", file = codefile, append = TRUE) # Since we changed to a tab-delmited file, we also need to change the import format to TAB.
+  cat("ENCODING=\"Locale\"\n", file = codefile, append = TRUE)
+  # cat("/", paste(strwrap(paste(dl.varnames, collapse = " "), width = 70), "\n"), " .\n\n", file = codefile, append = TRUE)
+  cat("/", paste(spssSafeSplit(paste(dl.varnames, collapse = " ")), "\n"), " .\n\n", file = codefile, append = TRUE) # The original code forces a string wrap.  If a new line ends up begining with a '*" weird things happen so we use the spssSafeSplit function to prevent this.
+  cat("VARIABLE LABELS\n", file = codefile, append = TRUE)
+  cat(paste(varnames, adQuote(varlabels), "\n"), ".\n", file = codefile, append = TRUE)
+  
+  if (any(fav)) {
+    cat("\nVALUE LABELS\n", file = codefile, append = TRUE)
+    for (v in which(fav)) {
+      cat("/\n", file = codefile, append = TRUE)
+      cat(varnames[v], " \n", file = codefile, append = TRUE, sep = "")
+      levs <- levels(df[[v]])
+      cat(paste(seq_along(levs), adQuote(levs), "\n", sep = " "), file = codefile, append = TRUE)
+    }
+    cat(".\n", file = codefile, append = TRUE)
+  }
+  
+  ord <- sapply(df, is.ordered)
+  if (any(ord)) cat("VARIABLE LEVEL", paste(strwrap(paste(varnames[ord], collapse = ", "), width = 70), "\n"), "(ordinal).\n", file = codefile, append = TRUE)
+  
+  num <- sapply(df, is.numeric)
+  
+  if (any(num)) cat("VARIABLE LEVEL", paste(strwrap(paste(varnames[num], collapse = ", "), width = 70), "\n"), "(scale).\n", file = codefile, append = TRUE)
+  
+  cat("\nEXECUTE.\n", file = codefile, append = TRUE)
+}
+
+write.foreign(mpg, datafile = "export_r_to_spss_with_variable_labels.txt", codefile = "export_r_to_spss_with_variable_labels.sps", package = "SPSS2", maxchars = 64L)
+```
+
+If you are using a console you can create you .sav file with the following commands, otherwise if you are using the GUI, click away!
+
+```{r createSAV, eval = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+cat("\nSAVE OUTFILE = \"export_r_to_spss_with_variable_labels.sav\".", file = "export_r_to_spss_with_variable_labels.sps", append = TRUE)
+
+system("pspp export_r_to_spss_with_variable_labels.sps")
+```
+
+If you want to run the output yourself the data file can be downloaded <a href="https://waderstats.com/rstudio-files/export_r_to_spss_with_variable_labels/export_r_to_spss_with_variable_labels.txt" target="_blank">here</a> and the code file can be downloaded <a href="https://waderstats.com/rstudio-files/export_r_to_spss_with_variable_labels/export_r_to_spss_with_variable_labels.sps" target="_blank">here</a>.  If you want to download the final .sav data set, it is <a href="https://waderstats.com/rstudio-files/export_r_to_spss_with_variable_labels/export_r_to_spss_with_variable_labels.sav" target="_blank">here</a>.
+
+# Session Info
+
+```{r sessionInfo, eval = TRUE, echo = TRUE, results = TRUE, warning = FALSE, message = FALSE}
+sessionInfo()
+```
+
+# References
+
+<!-- This is needed to resize iframe content. Please ignore if duplicationg this R markdown file --> 
+<script type="text/javascript" src="https://www.waderstats.com/wp-includes/js/iframe-resizer/js/iframeResizer.contentWindow.min.js" defer></script>
