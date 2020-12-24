@@ -195,15 +195,28 @@ writeForeignSPSS2 <- function (df, datafile, codefile, varnames = NULL, maxchars
 write.foreign(mpg, datafile = "export_r_to_spss_with_variable_labels.txt", codefile = "export_r_to_spss_with_variable_labels.sps", package = "SPSS2", maxchars = 64L)
 ```
 
-If you are using a console you can create you .sav file with the following commands, otherwise if you are using the GUI, click away!
+If you are using a console you can create you .sav file with the following commands, otherwise if you are using the SPSS GUI, click away!
 
-```{r createSAV, eval = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
+```{r createSAV, eval = TRUE, echo = TRUE, warning = FALSE, message = TRUE}
 cat("\nSAVE OUTFILE = \"export_r_to_spss_with_variable_labels.sav\".", file = "export_r_to_spss_with_variable_labels.sps", append = TRUE)
 
 system("pspp export_r_to_spss_with_variable_labels.sps")
 ```
 
-If you want to run the output yourself the data file can be downloaded <a href="https://waderstats.com/rstudio-files/export_r_to_spss_with_variable_labels/export_r_to_spss_with_variable_labels.txt" target="_blank">here</a> and the code file can be downloaded <a href="https://waderstats.com/rstudio-files/export_r_to_spss_with_variable_labels/export_r_to_spss_with_variable_labels.sps" target="_blank">here</a>.  If you want to download the final .sav data set, it is <a href="https://waderstats.com/rstudio-files/export_r_to_spss_with_variable_labels/export_r_to_spss_with_variable_labels.sav" target="_blank">here</a>.
+Finally, we can view the results to make sure everything worked as expected.
+
+<pre>
+<code>
+get file='export_r_to_spss_with_variable_labels.sav'.
+display dictionary.
+list /cases=from 1 to 5.
+EXECUTE.
+</code>
+</pre>
+
+```{r psppResults, eval = TRUE, echo = TRUE, warning = FALSE, message = TRUE}
+cat(system("pspp export_r_to_spss_with_variable_labels_results.sps", intern = TRUE), sep = "\n")
+```
 
 # Session Info
 
