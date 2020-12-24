@@ -1,4 +1,4 @@
-# These are the commands I used to install pspp on Ubuntu 20.04 LTS
+# These are the commands I used to install pspp from source on Ubuntu 20.04 LTS
 
 sudo apt install gettext
 sudo apt install appstream
