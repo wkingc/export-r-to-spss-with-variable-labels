@@ -227,6 +227,3 @@ sessionInfo()
 ```
 
 # References
-
-<!-- This is needed to resize iframe content. Please ignore if duplicationg this R markdown file --> 
-<script type="text/javascript" src="https://www.waderstats.com/wp-includes/js/iframe-resizer/js/iframeResizer.contentWindow.min.js" defer></script>

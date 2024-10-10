@@ -140,4 +140,3 @@ VARIABLE LEVEL displ, cty, hwy, rn
 EXECUTE.
 
 SAVE OUTFILE = "export_r_to_spss_with_variable_labels.sav".
-SAVE OUTFILE = "export_r_to_spss_with_variable_labels.sav".

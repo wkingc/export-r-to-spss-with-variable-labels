@@ -5,8 +5,8 @@ sudo apt install appstream
 sudo apt install libcairo2-dev
 sudo apt install libpango1.0-dev
 sudo apt install libgtk-3-dev
-sudo apt install libgtksouYrceview-3.0-dev
-sudo apt install libgsl-devY
+sudo apt install libgtksourceview-3.0-dev
+sudo apt install libgsl-dev
 
 sudo wget http://alpha.gnu.org/gnu/ssw/spread-sheet-widget-0.6.tar.gz
 tar -xzf spread-sheet-widget-0.6.tar.gz
