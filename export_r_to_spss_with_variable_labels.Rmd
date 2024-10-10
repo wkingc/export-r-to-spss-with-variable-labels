@@ -1,4 +1,6 @@
 ---
+title: "Export R to SPSS with Variable Labels"
+author: "Wade K. Copeland"
 bibliography: export_r_to_spss_with_variable_labels.bib
 biblio-style: apalike
 link-citations: yes
@@ -7,16 +9,16 @@ output:
     theme: default
     highlight: textmate
     code_folding: show
-    mathjax: local
-    self_contained: FALSE
+    mathjax: default
+    self_contained: TRUE
     number_sections: FALSE
 ---
 
 # Introduction
 
-The <i>foreign</i> R package is useful for exporting data sets to all kinds of formats including files for the proprietary <a href = "https://www.ibm.com/analytics/spss-statistics-software" target="_blank">SPSS program from IBM</a>.  However, the default method for writing to SPSS doesn't allow for variable labels.  Instead, it defaults to labeling all of the variables by their name from the column headings.  In this presentation, we will use the <i>Hmisc</i> R package for its variable labeling functionality and write a modification to the original SPSS export function from the <i>foreign</i> R package.  If you want to test this code but don't have SPSS, there is an open-source version available called <a href = "https://www.gnu.org/software/pspp/" target="_blank">PSPP</a>.
+The <i>foreign</i> R package is useful for exporting data sets to all kinds of formats including files for the proprietary <a href = "https://www.ibm.com/analytics/spss-statistics-software" target="_blank">SPSS program from IBM</a>.  However, the default method for writing to SPSS doesn't allow for variable labels.  Instead, it defaults to labeling all of the variables by their name from the column headings.  In this presentation, we will use the <i>Hmisc</i> R package for its variable labeling functionality and write a modification to the original SPSS export function from the <i>foreign</i> R package.  If you want to use this code but don't have SPSS, there is an open-source version available called <a href = "https://www.gnu.org/software/pspp/" target="_blank">PSPP</a>.
 
-This presentation uses the R programming language and assumes the end user is taking advantage of RStudio IDE to compile their R markdown files into HTML [@Rlang2019; @Rstudio].  All of the files needed to reproduce these results can be downloaded from the Git repository <code>git clone <span>https</span>://git.waderstats.com/export_r_to_spss_with_variable_labels/</code>.
+This presentation uses the R programming language and assumes the end user is taking advantage of RStudio IDE to compile their R markdown files into HTML [@Rlang2019; @Rstudio].  All of the files needed to reproduce these results can be downloaded from the Git repository <a href="https://github.com/wkingc/export_r_to_spss_with_variable_labels" target="_blank">https://github.com/wkingc/export_r_to_spss_with_variable_labels</a>.
 
 # Libraries
 
@@ -24,11 +26,11 @@ The libraries <i>knitr</i>, <i>bookdown</i>, and <i>kableExtra</i> generate the 
 
 ```{r libraries, eval = TRUE, echo = TRUE, results = TRUE, warning = FALSE, message = FALSE}
 package_loader <- function(x, ...) {
-  if (x %in% rownames(installed.packages()) == FALSE) install.packages(x)
-  library(x, ...)
+    if (x %in% rownames(installed.packages()) == FALSE) install.packages(x)
+    library(x, ...)
 }
 
-packages <- c("knitr", "bookdown", "kableExtra", "Hmisc", "foreign")
+packages <- c("knitr", "bookdown", "kableExtra", "Hmisc", "foreign", "ggplot2")
 
 invisible(sapply(X = packages, FUN = package_loader, character.only = TRUE))
 ```
@@ -97,99 +99,99 @@ is.date <- function(x) inherits(x, 'Date')
 
 # The original function uses the strwrap function that can sometime cause a split string to begin with a '*'.  This function prevents this problem.
 spssSafeSplit <- function(x) {
-  spssSplit <- strwrap(paste(x, collapse = " "), width = 70)
-  
-  spssInvalid <- which(sapply(X = spssSplit, FUN = substring, 1, 1) == "*")
-  
-  if (length(spssInvalid) == 0) return(spssSplit)
-  
-  for (i in 1:length(spssInvalid)) {
-    spssSplit[spssInvalid[i]] <- gsub("* ", "", spssSplit[spssInvalid[i]], fixed = TRUE)
-    spssSplit[spssInvalid[i] - 1] <- paste(spssSplit[spssInvalid[i] - 1], "*")
-  }
-  
-  return(spssSplit)
+    spssSplit <- strwrap(paste(x, collapse = " "), width = 70)
+    
+    spssInvalid <- which(sapply(X = spssSplit, FUN = substring, 1, 1) == "*")
+    
+    if (length(spssInvalid) == 0) return(spssSplit)
+    
+    for (i in 1:length(spssInvalid)) {
+        spssSplit[spssInvalid[i]] <- gsub("* ", "", spssSplit[spssInvalid[i]], fixed = TRUE)
+        spssSplit[spssInvalid[i] - 1] <- paste(spssSplit[spssInvalid[i] - 1], "*")
+    }
+    
+    return(spssSplit)
 }
 
-writeForeignSPSS2 <- function (df, datafile, codefile, varnames = NULL, maxchars = 32L) {
-  dfn <- lapply(df, function(x) if (is.factor(x)) as.numeric(x) else x)
-  
-  # write.table(dfn, file = datafile, row.names = FALSE, col.names = FALSE, sep = ",", quote = FALSE, na = "", eol = ",\n")
-  write.table(dfn, file = datafile, row.names = FALSE, col.names = FALSE, sep = "\t", quote = FALSE, na = ".", eol = "\n") # The original code creates a comma-delimited file.  In many data sets, there are comment columns that include commas which creates unexpected results.  To avoid that I change it over to create tab-delimited data.
-  
-  # varlabels <- names(df)
-  varlabels <- label(df) # We don't want the names of df but the labels.
-  
-  if (is.null(varnames)) {
-    varnames <- abbreviate(names(df), maxchars)
-    if (any(sapply(varnames, nchar) > maxchars)) stop("I cannot abbreviate the variable names to 'maxchars' or fewer chars")
-    # if (any(varnames != varlabels)) warning("some variable names were abbreviated")
-    if (any(varnames != names(varlabels))) warning("some variable names were abbreviated") # The original code has an error check for the max length of variable names.  We can still have the error check, but we need to use the names of varlables instead.  
-  }
-  
-  varnames <- gsub("[^[:alnum:]_\\$@#]", "\\.", varnames)
-  dl.varnames <- varnames
-  
-  chv <- sapply(df, is.character)
-  fav <- sapply(df, is.factor)
-  dav <- sapply(df, is.date) # This is added in to deal with date class columns.
-  
-  if (any(chv)) {
-    lengths <- sapply(df[chv], function(v) max(c(nchar(v), 8), na.rm = TRUE))
-    lengths <- paste0("(A", lengths, ")")
-    dl.varnames[chv] <- paste(dl.varnames[chv], lengths)
-  }
-  
-  # Store any date class columns as a character string in SPSS.  It is the same as above, but coerces the date to a character vector.
-  if (any(dav)) {
-    lengths <- sapply(df[dav], function(v) max(c(nchar(as.character(v)), 8), na.rm = TRUE))
-    lengths <- paste0("(A", lengths, ")")
-    dl.varnames[dav] <- paste(dl.varnames[dav], lengths)
-  }
-  
-  if (any(fav)) {
-    dl.varnames[fav] <- paste(dl.varnames[fav], "(F8.0)")
-  }
-  
-  # if (any(chv) || any(fav)) {
-  #     star <- ifelse(c(FALSE, diff(chv | fav) == 1)[chv | fav], " *", " ")
-  #     dl.varnames[chv | fav] <- paste(star, dl.varnames[chv | fav])
-  # }
-  
-  # In the code above, the star detection isn't setup for dates.  We can add this simple enough, as shown below.
-  if (any(chv) || dav || any(fav)) {
-    star <- ifelse(c(FALSE, diff(chv | dav | fav) == 1)[chv | dav | fav], " *", " ")
-    dl.varnames[chv | dav | fav] <- paste(star, dl.varnames[chv | dav | fav])
-  }
-
-  cat("SET DECIMAL=DOT.\n\n", file = codefile)
-  # cat("DATA LIST FILE=", adQuote(datafile), " free (\",\")\n", file = codefile, append = TRUE)
-  cat("DATA LIST FILE=", adQuote(datafile), " free (TAB)\n", file = codefile, append = TRUE) # Since we changed to a tab-delmited file, we also need to change the import format to TAB.
-  cat("ENCODING=\"Locale\"\n", file = codefile, append = TRUE)
-  # cat("/", paste(strwrap(paste(dl.varnames, collapse = " "), width = 70), "\n"), " .\n\n", file = codefile, append = TRUE)
-  cat("/", paste(spssSafeSplit(paste(dl.varnames, collapse = " ")), "\n"), " .\n\n", file = codefile, append = TRUE) # The original code forces a string wrap.  If a new line ends up begining with a '*" weird things happen so we use the spssSafeSplit function to prevent this.
-  cat("VARIABLE LABELS\n", file = codefile, append = TRUE)
-  cat(paste(varnames, adQuote(varlabels), "\n"), ".\n", file = codefile, append = TRUE)
-  
-  if (any(fav)) {
-    cat("\nVALUE LABELS\n", file = codefile, append = TRUE)
-    for (v in which(fav)) {
-      cat("/\n", file = codefile, append = TRUE)
-      cat(varnames[v], " \n", file = codefile, append = TRUE, sep = "")
-      levs <- levels(df[[v]])
-      cat(paste(seq_along(levs), adQuote(levs), "\n", sep = " "), file = codefile, append = TRUE)
+writeForeignSPSS2 <- function(df, datafile, codefile, varnames = NULL, maxchars = 32L) {
+    dfn <- lapply(df, function(x) if (is.factor(x)) as.numeric(x) else x)
+    
+    # write.table(dfn, file = datafile, row.names = FALSE, col.names = FALSE, sep = ",", quote = FALSE, na = "", eol = ",\n")
+    write.table(dfn, file = datafile, row.names = FALSE, col.names = FALSE, sep = "\t", quote = FALSE, na = ".", eol = "\n") # The original code creates a comma-delimited file.  In many data sets, there are comment columns that include commas which creates unexpected results.  To avoid that I change it over to create tab-delimited data.
+    
+    # varlabels <- names(df)
+    varlabels <- label(df) # We don't want the names of df but the labels.
+    
+    if (is.null(varnames)) {
+        varnames <- abbreviate(names(df), maxchars)
+        if (any(sapply(varnames, nchar) > maxchars)) stop("I cannot abbreviate the variable names to 'maxchars' or fewer chars")
+        # if (any(varnames != varlabels)) warning("some variable names were abbreviated")
+        if (any(varnames != names(varlabels))) warning("some variable names were abbreviated") # The original code has an error check for the max length of variable names.  We can still have the error check, but we need to use the names of varlables instead.  
     }
-    cat(".\n", file = codefile, append = TRUE)
-  }
-  
-  ord <- sapply(df, is.ordered)
-  if (any(ord)) cat("VARIABLE LEVEL", paste(strwrap(paste(varnames[ord], collapse = ", "), width = 70), "\n"), "(ordinal).\n", file = codefile, append = TRUE)
-  
-  num <- sapply(df, is.numeric)
-  
-  if (any(num)) cat("VARIABLE LEVEL", paste(strwrap(paste(varnames[num], collapse = ", "), width = 70), "\n"), "(scale).\n", file = codefile, append = TRUE)
-  
-  cat("\nEXECUTE.\n", file = codefile, append = TRUE)
+    
+    varnames <- gsub("[^[:alnum:]_\\$@#]", "\\.", varnames)
+    dl.varnames <- varnames
+    
+    chv <- sapply(df, is.character)
+    fav <- sapply(df, is.factor)
+    dav <- sapply(df, is.date) # This is added in to deal with date class columns.
+    
+    if (any(chv)) {
+        lengths <- sapply(df[chv], function(v) max(c(nchar(v), 8), na.rm = TRUE))
+        lengths <- paste0("(A", lengths, ")")
+        dl.varnames[chv] <- paste(dl.varnames[chv], lengths)
+    }
+    
+    # Store any date class columns as a character string in SPSS.  It is the same as above, but coerces the date to a character vector.
+    if (any(dav)) {
+        lengths <- sapply(df[dav], function(v) max(c(nchar(as.character(v)), 8), na.rm = TRUE))
+        lengths <- paste0("(A", lengths, ")")
+        dl.varnames[dav] <- paste(dl.varnames[dav], lengths)
+    }
+    
+    if (any(fav)) {
+        dl.varnames[fav] <- paste(dl.varnames[fav], "(F8.0)")
+    }
+    
+    # if (any(chv) || any(fav)) {
+    #     star <- ifelse(c(FALSE, diff(chv | fav) == 1)[chv | fav], " *", " ")
+    #     dl.varnames[chv | fav] <- paste(star, dl.varnames[chv | fav])
+    # }
+    
+    # In the code above, the star detection isn't setup for dates.  We can add this simple enough, as shown below.
+    if (any(chv) || dav || any(fav)) {
+        star <- ifelse(c(FALSE, diff(chv | dav | fav) == 1)[chv | dav | fav], " *", " ")
+        dl.varnames[chv | dav | fav] <- paste(star, dl.varnames[chv | dav | fav])
+    }
+    
+    cat("SET DECIMAL=DOT.\n\n", file = codefile)
+    # cat("DATA LIST FILE=", adQuote(datafile), " free (\",\")\n", file = codefile, append = TRUE)
+    cat("DATA LIST FILE=", adQuote(datafile), " free (TAB)\n", file = codefile, append = TRUE) # Since we changed to a tab-delmited file, we also need to change the import format to TAB.
+    cat("ENCODING=\"Locale\"\n", file = codefile, append = TRUE)
+    # cat("/", paste(strwrap(paste(dl.varnames, collapse = " "), width = 70), "\n"), " .\n\n", file = codefile, append = TRUE)
+    cat("/", paste(spssSafeSplit(paste(dl.varnames, collapse = " ")), "\n"), " .\n\n", file = codefile, append = TRUE) # The original code forces a string wrap.  If a new line ends up begining with a '*" weird things happen so we use the spssSafeSplit function to prevent this.
+    cat("VARIABLE LABELS\n", file = codefile, append = TRUE)
+    cat(paste(varnames, adQuote(varlabels), "\n"), ".\n", file = codefile, append = TRUE)
+    
+    if (any(fav)) {
+        cat("\nVALUE LABELS\n", file = codefile, append = TRUE)
+        for (v in which(fav)) {
+            cat("/\n", file = codefile, append = TRUE)
+            cat(varnames[v], " \n", file = codefile, append = TRUE, sep = "")
+            levs <- levels(df[[v]])
+            cat(paste(seq_along(levs), adQuote(levs), "\n", sep = " "), file = codefile, append = TRUE)
+        }
+        cat(".\n", file = codefile, append = TRUE)
+    }
+    
+    ord <- sapply(df, is.ordered)
+    if (any(ord)) cat("VARIABLE LEVEL", paste(strwrap(paste(varnames[ord], collapse = ", "), width = 70), "\n"), "(ordinal).\n", file = codefile, append = TRUE)
+    
+    num <- sapply(df, is.numeric)
+    
+    if (any(num)) cat("VARIABLE LEVEL", paste(strwrap(paste(varnames[num], collapse = ", "), width = 70), "\n"), "(scale).\n", file = codefile, append = TRUE)
+    
+    cat("\nEXECUTE.\n", file = codefile, append = TRUE)
 }
 
 write.foreign(mpg, datafile = "export_r_to_spss_with_variable_labels.txt", codefile = "export_r_to_spss_with_variable_labels.sps", package = "SPSS2", maxchars = 64L)
