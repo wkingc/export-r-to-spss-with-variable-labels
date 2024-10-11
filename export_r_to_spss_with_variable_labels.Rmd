@@ -22,17 +22,15 @@ This presentation uses the R programming language and assumes the end user is ta
 
 # Libraries
 
-The libraries <i>knitr</i>, <i>bookdown</i>, and <i>kableExtra</i> generate the HTML output [@knitr; @bookdown; @kableExtra].  We use the <i>Hmisc</i> library to set variable labels and the <i>foreign</i> library to export the data to SPSS [@Hmisc; @foreign].
+The libraries <i>knitr</i>, <i>bookdown</i>, and <i>kableExtra</i> generate the HTML output [@knitr; @bookdown; @kableExtra].  We use the <i>Hmisc</i> library to set variable labels and the <i>foreign</i> library to export the data to SPSS [@Hmisc; @foreign].  The <i>ggplot2</i> library is loaded for the example data set that is used [@ggplot2].
 
 ```{r libraries, eval = TRUE, echo = TRUE, results = TRUE, warning = FALSE, message = FALSE}
-package_loader <- function(x, ...) {
-    if (x %in% rownames(installed.packages()) == FALSE) install.packages(x)
-    library(x, ...)
-}
-
-packages <- c("knitr", "bookdown", "kableExtra", "Hmisc", "foreign", "ggplot2")
-
-invisible(sapply(X = packages, FUN = package_loader, character.only = TRUE))
+library("knitr")
+library("bookdown")
+library("kableExtra")
+library("Hmisc")
+library("foreign")
+library("ggplot2")
 ```
 
 # Data Setup
