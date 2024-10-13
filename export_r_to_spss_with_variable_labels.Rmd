@@ -86,7 +86,7 @@ kable(head(mpg), caption = "Header of <b>mpg</b>.", booktabs = TRUE, escape = FA
 
 # Exporting the Data to SPSS
 
-The original unexported function can be viewed with the command <b>foreign:::writeForeignSPSS</b>.  We are going to create a new function called <b>writeForeignSPSS2</b>.  Below is the code with comments where changes are made.
+The original unexported function can be viewed with the command <b>foreign:writeForeignSPSS</b>.  We are going to create a new function called <b>writeForeignSPSS2</b>.  Below is the code with comments where changes are made.
 
 ```{r exportToSPSS, eval = TRUE, echo = TRUE, warning = FALSE, message = FALSE}
 # The function below isn't exported from the foreign package, so we recreate it here.  Another option is the use the ::: operator but the documention for R discourages this use case.  We will take their word for it :).

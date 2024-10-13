@@ -1061,7 +1061,7 @@ Meh.
 </div>
 <div id="exporting-the-data-to-spss" class="section level1">
 <h1>Exporting the Data to SPSS</h1>
-<p>The original unexported function can be viewed with the command <b>foreign:::writeForeignSPSS</b>. We are going to create a new function called <b>writeForeignSPSS2</b>. Below is the code with comments where changes are made.</p>
+<p>The original unexported function can be viewed with the command <b>foreign:writeForeignSPSS</b>. We are going to create a new function called <b>writeForeignSPSS2</b>. Below is the code with comments where changes are made.</p>
 <pre class="r"><code># The function below isn&#39;t exported from the foreign package, so we recreate it here.  Another option is the use the ::: operator but the documention for R discourages this use case.  We will take their word for it :).
 adQuote &lt;- function(x) paste(&quot;\&quot;&quot;, x, &quot;\&quot;&quot;, sep = &quot;&quot;)
 
@@ -1180,8 +1180,212 @@ EXECUTE.
 </code>
 </pre>
 <pre class="r"><code>cat(system(&quot;pspp export_r_to_spss_with_variable_labels_results.sps&quot;, intern = TRUE), sep = &quot;\n&quot;)</code></pre>
-<pre><code>## error: Opening `export_r_to_spss_with_variable_labels_results.sps&#39;: No such
-## file or directory.</code></pre>
+<pre><code>##                                  Variables
+## +--------+--------+-------------+-----------+-----+-----+---------+------+
+## |        |        |             |Measurement|     |     |         | Print|
+## |Name    |Position|    Label    |   Level   | Role|Width|Alignment|Format|
+## +--------+--------+-------------+-----------+-----+-----+---------+------+
+## |manu    |       1|manufacturer |Scale      |Input|    8|Right    |F8.0  |
+## |model   |       2|model name   |Scale      |Input|    8|Right    |F8.0  |
+## |displ   |       3|engine       |Scale      |Input|    8|Right    |F8.2  |
+## |        |        |displacement,|           |     |     |         |      |
+## |        |        |in litres    |           |     |     |         |      |
+## |year    |       4|year of      |Ordinal    |Input|    8|Right    |F8.0  |
+## |        |        |manufacture  |           |     |     |         |      |
+## |cyl     |       5|number of    |Ordinal    |Input|    8|Right    |F8.0  |
+## |        |        |cylinders    |           |     |     |         |      |
+## |trans   |       6|type of      |Scale      |Input|    8|Right    |F8.0  |
+## |        |        |transmission |           |     |     |         |      |
+## |drv     |       7|drive type   |Scale      |Input|    8|Right    |F8.0  |
+## |cty     |       8|city miles   |Scale      |Input|    8|Right    |F8.2  |
+## |        |        |per gallon   |           |     |     |         |      |
+## |hwy     |       9|highway miles|Scale      |Input|    8|Right    |F8.2  |
+## |        |        |per gallon   |           |     |     |         |      |
+## |fl      |      10|fuel type    |Scale      |Input|    8|Right    |F8.0  |
+## |class   |      11|type of car  |Scale      |Input|    8|Right    |F8.0  |
+## |dp      |      12|date of      |Nominal    |Input|   10|Left     |A10   |
+## |        |        |purchase     |           |     |     |         |      |
+## |rn      |      13|some random  |Scale      |Input|    8|Right    |F8.2  |
+## |        |        |numbers that |           |     |     |         |      |
+## |        |        |are generated|           |     |     |         |      |
+## |        |        |from a normal|           |     |     |         |      |
+## |        |        |distrubtion  |           |     |     |         |      |
+## |        |        |with mean =  |           |     |     |         |      |
+## |        |        |10 and sd = 5|           |     |     |         |      |
+## |party   |      14|some random  |Scale      |Input|    8|Right    |F8.0  |
+## |        |        |political    |           |     |     |         |      |
+## |        |        |parties      |           |     |     |         |      |
+## |comments|      15|some random  |Nominal    |Input|   32|Left     |A46   |
+## |        |        |comments     |           |     |     |         |      |
+## +--------+--------+-------------+-----------+-----+-----+---------+------+
+## 
+## +--------+------+-------+
+## |        | Write|Missing|
+## |Name    |Format| Values|
+## +--------+------+-------+
+## |manu    |F8.0  |       |
+## |model   |F8.0  |       |
+## |displ   |F8.2  |       |
+## |        |      |       |
+## |        |      |       |
+## |year    |F8.0  |       |
+## |        |      |       |
+## |cyl     |F8.0  |       |
+## |        |      |       |
+## |trans   |F8.0  |       |
+## |        |      |       |
+## |drv     |F8.0  |       |
+## |cty     |F8.2  |       |
+## |        |      |       |
+## |hwy     |F8.2  |       |
+## |        |      |       |
+## |fl      |F8.0  |       |
+## |class   |F8.0  |       |
+## |dp      |A10   |       |
+## |        |      |       |
+## |rn      |F8.2  |       |
+## |        |      |       |
+## |        |      |       |
+## |        |      |       |
+## |        |      |       |
+## |        |      |       |
+## |        |      |       |
+## |party   |F8.0  |       |
+## |        |      |       |
+## |        |      |       |
+## |comments|A46   |       |
+## |        |      |       |
+## +--------+------+-------+
+## 
+##                        Value Labels
+## +--------------------------------+----------------------+
+## |Variable Value                  |         Label        |
+## +--------------------------------+----------------------+
+## |manufacturer                  1 |audi                  |
+## |                              2 |chevrolet             |
+## |                              3 |dodge                 |
+## |                              4 |ford                  |
+## |                              5 |honda                 |
+## |                              6 |hyundai               |
+## |                              7 |jeep                  |
+## |                              8 |land rover            |
+## |                              9 |lincoln               |
+## |                              10|mercury               |
+## |                              11|nissan                |
+## |                              12|pontiac               |
+## |                              13|subaru                |
+## |                              14|toyota                |
+## |                              15|volkswagen            |
+## |model name                    1 |4runner 4wd           |
+## |                              2 |a4                    |
+## |                              3 |a4 quattro            |
+## |                              4 |a6 quattro            |
+## |                              5 |altima                |
+## |                              6 |c1500 suburban 2wd    |
+## |                              7 |camry                 |
+## |                              8 |camry solara          |
+## |                              9 |caravan 2wd           |
+## |                              10|civic                 |
+## |                              11|corolla               |
+## |                              12|corvette              |
+## |                              13|dakota pickup 4wd     |
+## |                              14|durango 4wd           |
+## |                              15|expedition 2wd        |
+## |                              16|explorer 4wd          |
+## |                              17|f150 pickup 4wd       |
+## |                              18|forester awd          |
+## |                              19|grand cherokee 4wd    |
+## |                              20|grand prix            |
+## |                              21|gti                   |
+## |                              22|impreza awd           |
+## |                              23|jetta                 |
+## |                              24|k1500 tahoe 4wd       |
+## |                              25|land cruiser wagon 4wd|
+## |                              26|malibu                |
+## |                              27|maxima                |
+## |                              28|mountaineer 4wd       |
+## |                              29|mustang               |
+## |                              30|navigator 2wd         |
+## |                              31|new beetle            |
+## |                              32|passat                |
+## |                              33|pathfinder 4wd        |
+## |                              34|ram 1500 pickup 4wd   |
+## |                              35|range rover           |
+## |                              36|sonata                |
+## |                              37|tiburon               |
+## |                              38|toyota tacoma 4wd     |
+## |year of manufacture           1 |1999                  |
+## |                              2 |2008                  |
+## |number of cylinders           1 |4                     |
+## |                              2 |5                     |
+## |                              3 |6                     |
+## |                              4 |8                     |
+## |type of transmission          1 |auto(av)              |
+## |                              2 |auto(l3)              |
+## |                              3 |auto(l4)              |
+## |                              4 |auto(l5)              |
+## |                              5 |auto(l6)              |
+## |                              6 |auto(s4)              |
+## |                              7 |auto(s5)              |
+## |                              8 |auto(s6)              |
+## |                              9 |manual(m5)            |
+## |                              10|manual(m6)            |
+## |drive type                    1 |front-wheel drive     |
+## |                              2 |rear wheel drive      |
+## |                              3 |4wd                   |
+## |fuel type                     1 |c                     |
+## |                              2 |d                     |
+## |                              3 |e                     |
+## |                              4 |p                     |
+## |                              5 |r                     |
+## |type of car                   1 |2seater               |
+## |                              2 |compact               |
+## |                              3 |midsize               |
+## |                              4 |minivan               |
+## |                              5 |pickup                |
+## |                              6 |subcompact            |
+## |                              7 |suv                   |
+## |some random political parties 1 |republican            |
+## |                              2 |democrat              |
+## |                              3 |independent           |
+## +--------------------------------+----------------------+
+## 
+##                                  Data List
+## +----+-----+-----+----+---+-----+---+-----+-----+--+-----+----------+-----+
+## |manu|model|displ|year|cyl|trans|drv| cty | hwy |fl|class|    dp    |  rn |
+## +----+-----+-----+----+---+-----+---+-----+-----+--+-----+----------+-----+
+## |   1|    2| 1.80|   1|  1|    4|  1|18.00|29.00| 4|    2|1999-06-28|18.99|
+## |    |     |     |    |   |     |   |     |     |  |     |          |     |
+## |    |     |     |    |   |     |   |     |     |  |     |          |     |
+## |   1|    2| 1.80|   1|  1|    9|  1|21.00|29.00| 4|    2|1999-01-14|    .|
+## |    |     |     |    |   |     |   |     |     |  |     |          |     |
+## |    |     |     |    |   |     |   |     |     |  |     |          |     |
+## |   1|    2| 2.00|   2|  1|   10|  1|20.00|31.00| 4|    2|2008-02-08|19.50|
+## |    |     |     |    |   |     |   |     |     |  |     |          |     |
+## |    |     |     |    |   |     |   |     |     |  |     |          |     |
+## |   1|    2| 2.00|   2|  1|    1|  1|21.00|30.00| 4|    2|2008-07-14|    .|
+## |    |     |     |    |   |     |   |     |     |  |     |          |     |
+## |    |     |     |    |   |     |   |     |     |  |     |          |     |
+## |   1|    2| 2.80|   1|  3|    4|  1|16.00|26.00| 4|    2|1999-07-14|13.68|
+## +----+-----+-----+----+---+-----+---+-----+-----+--+-----+----------+-----+
+## 
+## +-----+--------+
+## |party|comments|
+## +-----+--------+
+## |    2|I like  |
+## |     |this    |
+## |     |car!    |
+## |    .|I like  |
+## |     |this    |
+## |     |car!    |
+## |    3|Does it |
+## |     |also    |
+## |     |fly?    |
+## |    3|I like  |
+## |     |this    |
+## |     |car!    |
+## |    2|Meh.    |
+## +-----+--------+</code></pre>
 </div>
 <div id="session-info" class="section level1">
 <h1>Session Info</h1>
