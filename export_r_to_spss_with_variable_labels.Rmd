@@ -18,7 +18,7 @@ output:
 
 The <i>foreign</i> R package is useful for exporting data sets to all kinds of formats including files for the proprietary <a href = "https://www.ibm.com/analytics/spss-statistics-software" target="_blank">SPSS program from IBM</a>.  However, the default method for writing to SPSS doesn't allow for variable labels.  Instead, it defaults to labeling all of the variables by their name from the column headings.  In this presentation, we will use the <i>Hmisc</i> R package for its variable labeling functionality and write a modification to the original SPSS export function from the <i>foreign</i> R package.  If you want to use this code but don't have SPSS, there is an open-source version available called <a href = "https://www.gnu.org/software/pspp/" target="_blank">PSPP</a>.
 
-This presentation uses the R programming language and assumes the end user is taking advantage of RStudio IDE to compile their R markdown files into HTML [@Rlang2019; @Rstudio].  All of the files needed to reproduce these results can be downloaded from the Git repository <a href="https://github.com/wkingc/export_r_to_spss_with_variable_labels" target="_blank">https://github.com/wkingc/export_r_to_spss_with_variable_labels</a>.
+This presentation uses the R programming language and assumes the end user is taking advantage of RStudio IDE to compile their R markdown files into HTML [@Rlang2019; @Rstudio].  All of the files needed to reproduce these results can be downloaded from the Git repository <a href="https://github.com/wkingc/export-r-to-spss-with-variable-labels" target="_blank">https://github.com/wkingc/export-r-to-spss-with-variable-labels</a>.
 
 # Libraries
 
