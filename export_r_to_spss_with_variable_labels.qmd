@@ -3,7 +3,7 @@ title: "Export R to SPSS with Variable Labels"
 author: "Wade K. Copeland"
 date: last-modified
 date-format: "MMMM DD, YYYY"
-bibliography: export_r_to_spss_with_variable_labels.bib
+bibliography: references.bib
 output-file: index.html
 format:
     html:
